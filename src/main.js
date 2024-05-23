@@ -70,7 +70,7 @@ async function handleLoadMore(event) {
         window.scrollBy({
             // top: cardHeight * 2,
             top: cardHeight * 1.95,
-            behavior: "smooth"
+            behavior: "smooth",
         })
 
         const  lightbox = new SimpleLightbox('.gallery a', { /* options */ });
