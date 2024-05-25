@@ -10,8 +10,8 @@ import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 
 
-import { apiService } from "./pixabay-api";
-import { renderGallery, templateGallery } from "./render-functions";
+import { apiService } from "./js/pixabay-api";
+import { renderGallery, templateGallery } from "./js/render-functions";
 
 
 const refs = {
@@ -23,7 +23,7 @@ const refs = {
 }
 
 const app = {
-    totalImagesUploaded: 15,
+    totalImagesUploaded: 0,
     classLists: {
         visuallyHidden: "visually-hidden"
     }
@@ -32,7 +32,6 @@ const app = {
 console.log(app)
 console.log(apiService)
 
-// refs.loadMoreBtn.classList.add( app.classLists.visuallyHidden);
 addClassList(refs.loadMoreBtn, app.classLists.visuallyHidden)
 
 refs.form.addEventListener('submit',handlerSubmitForm)
@@ -41,32 +40,19 @@ refs.loadMoreBtn.addEventListener("click", handleLoadMore)
 
 async function handleLoadMore(event) {
     refs.loadMoreBtn.textContent = "Loading..."
+
     try {
         const { data } = await apiService.getPhotos()
-        // console.log(data)
+
 
         const {hits, totalHits} = data;
-        // console.log(hits)
-        // console.log(totalHits)
-
-        app.totalImagesUploaded += 15;
-
-        if (app.totalImagesUploaded >= totalHits) {
-            iziToast.warning({
-                message: "we're sorry? but you've reached the end of search result",
-                position: "topRight"
-            })
-            addClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
-            return
-        }
 
         const galleryHTML = templateGallery(hits)
         renderGallery(refs.gallery, galleryHTML);
 
-
+       
         const {height: cardHeight} = document.querySelector(".gallery").firstElementChild.getBoundingClientRect()
-        console.log(scroll)
-
+ 
         window.scrollBy({
             // top: cardHeight * 2,
             top: cardHeight * 1.95,
@@ -75,6 +61,17 @@ async function handleLoadMore(event) {
 
         const  lightbox = new SimpleLightbox('.gallery a', { /* options */ });
         lightbox.refresh()
+
+        app.totalImagesUploaded += 15
+
+        if (app.totalImagesUploaded >= totalHits ) {
+            iziToast.warning({
+                message: "we're sorry? but you've reached the end of search result",
+                position: "topRight"
+            })
+            addClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
+            return
+        }
 
 
     } catch (error) {
@@ -88,7 +85,10 @@ async function handleLoadMore(event) {
         // addClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
     } finally {
         refs.loadMoreBtn.textContent = "Load more"
-    }
+
+        console.log(app)
+        console.log(apiService)
+    } 
 }
 
 async function handlerSubmitForm (event){
@@ -109,14 +109,16 @@ async function handlerSubmitForm (event){
     refs.searchButton.disabled = true;
         
     refs.loadMoreBtn.textContent = "Loading...."
-    // refs.loadMoreBtn.classList.remove( app.classLists.visuallyHidden)
     removeClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
 
     refs.gallery.innerHTML = "";
 
+    app.totalImagesUploaded = 0
+
+    apiService.params.page = 1
+
     try {
         const { data } = await apiService.getPhotos(searchQueryValue)
-        console.log(data)
 
         const {hits, totalHits} = data;
         console.log(hits)
@@ -128,6 +130,11 @@ async function handlerSubmitForm (event){
                 position: "topRight"
                 
             })
+
+            refs.loadMoreBtn.textContent = "Load more"
+            addClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
+
+            refs.searchButton.disabled = false;
             return
 
         }
@@ -143,12 +150,26 @@ async function handlerSubmitForm (event){
 
         refs.searchButton.disabled = false;
 
+
+        app.totalImagesUploaded = 15;
+
         const  lightbox = new SimpleLightbox('.gallery a', { /* options */ });
         lightbox.refresh()
 
         refs.loadMoreBtn.textContent = "Load more"
-        // refs.loadMoreBtn.classList.add( app.classLists.visuallyHidden)
+
         // addClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
+
+        if (totalHits <= 15) {
+            addClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
+            // refs.searchButton.disabled = true;
+
+        } else {
+            removeClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
+
+            // refs.searchButton.disabled = false;
+        }
+
 
     } catch (error) {
         console.log("ERROR", error)
@@ -160,12 +181,12 @@ async function handlerSubmitForm (event){
 
 
         refs.searchButton.disabled = false;
+
         // refs.loadMoreBtn.classList.add( app.classLists.visuallyHidden)
         addClassList(refs.loadMoreBtn,  app.classLists.visuallyHidden)
-    }
+    } 
     //  finally{
     //     refs.searchButton.disabled = false;
-    //     // refs.loadMoreBtn.classList.add( app.classLists.visuallyHidden)
     //     addClassList(refs.loadMoreBtn, app.classLists.visuallyHidden")
     // }
 
